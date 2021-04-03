@@ -14,7 +14,7 @@ s.connect((host, port))
 
 class OnMyWatch:
     # Set the directory on watch
-    watchDirectory = "/home/ferramenta/Documents/SSI/TG/TUDOIGUAL"
+    watchDirectory = "/home/ferramenta/Documents/SSI/TG/TUDOIGUAL/client"
   
     def __init__(self):
         self.observer = Observer()
@@ -40,9 +40,13 @@ class Handler(FileSystemEventHandler):
         if event.is_directory:
             return None
         if ".swp" not in event.src_path:
-            if event.event_type == 'created':
-                # Event is created, you can process it now
+            filename = event.src_path.split('/')[-1]
+            s.send(filename.encode())
+            if event.event_type == 'created' or event.event_type == 'modified':
+                # Event is created or modified, you can process it now
                 print("Watchdog received created event - % s." % event.src_path)
+                option = "created"
+                s.send(option.encode())
                 f = open(event.src_path,'rb')
                 l = f.read(1024)
                 while (l):
@@ -51,14 +55,13 @@ class Handler(FileSystemEventHandler):
                     l = f.read(1024)
                 f.close()
                 print ("Done Sending")
+                s.shutdown(socket.SHUT_WR)
 
             elif event.event_type == 'deleted':
                 # Event is modified, you can process it now
                 print("Watchdog received deleted event - % s." % event.src_path)
-    
-            elif event.event_type == 'modified':
-                # Event is modified, you can process it now
-                print("Watchdog received modified event - % s." % event.src_path)
+                option = "deleted"
+                s.send(option.encode())
 
 if __name__ == '__main__':
     watch = OnMyWatch()
